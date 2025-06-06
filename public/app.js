@@ -168,6 +168,32 @@ function displayWeather(weather) {
     }
 
     const windDirection = getWindDirection(weather.windDirection);
+    let metarHtml = '';
+    
+    if (weather.metar) {
+        metarHtml = `
+            <div class="weather-metar">
+                <h4>詳細氣象資訊 (METAR)</h4>
+                <div class="metar-details">
+                    <div class="metar-row">
+                        <p><strong>能見度：</strong> ${weather.metar.visibility || '-'} 公尺</p>
+                        <p><strong>露點溫度：</strong> ${weather.metar.dewPoint || '-'}°C</p>
+                    </div>
+                    <div class="metar-row">
+                        <p><strong>雲幕高度：</strong> ${weather.metar.ceiling || '-'} 呎</p>
+                        <p><strong>氣壓：</strong> ${weather.metar.pressure || '-'} hPa</p>
+                    </div>
+                    <div class="metar-raw">
+                        <p><strong>原始 METAR 報文：</strong></p>
+                        <code>${weather.metar.raw || '-'}</code>
+                    </div>
+                    <p class="metar-time">
+                        <strong>METAR 觀測時間：</strong> ${formatDateTime(weather.metar.observationTime)}
+                    </p>
+                </div>
+            </div>`;
+    }
+
     weatherData.innerHTML = `
         <div class="weather-details">
             <div class="weather-main">
@@ -186,6 +212,7 @@ function displayWeather(weather) {
                 <p><strong>風向：</strong> ${windDirection}</p>
                 <p class="observation-time"><strong>觀測時間：</strong> ${formatDateTime(weather.observationTime)}</p>
             </div>
+            ${metarHtml}
         </div>
     `;
 }

@@ -134,21 +134,43 @@ app.get('/api/weather/:airport', async (req, res) => {
         console.log(`從 TDX API 獲取天氣資料 - ${airport}`);
         const token = await getTDXToken();
         
-        const weatherResponse = await axios.get(
-            `https://tdx.transportdata.tw/api/basic/v2/Air/Airport/Weather/${airport}?$format=JSON`,
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // 獲取一般天氣資料和 METAR 資料
+        const [weatherResponse, metarResponse] = await Promise.all([
+            axios.get(
+                `https://tdx.transportdata.tw/api/basic/v2/Air/Airport/Weather/${airport}?$format=JSON`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            ),
+            axios.get(
+                `https://tdx.transportdata.tw/api/basic/v2/Air/METAR/Airport/${airport}?$format=JSON`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+        ]);
 
         const weatherData = weatherResponse.data;
+        const metarData = metarResponse.data;
+
         if (weatherData && weatherData.length > 0) {
             const currentWeather = weatherData[0];
+            const currentMetar = metarData && metarData.length > 0 ? metarData[0] : null;
+
             const formattedWeather = {
+                // 基本天氣資訊
                 temperature: currentWeather.Temperature,
                 humidity: currentWeather.Humidity,
                 description: currentWeather.WeatherDescription,
                 windSpeed: currentWeather.WindSpeed,
                 windDirection: currentWeather.WindDirection,
-                observationTime: currentWeather.ObservationTime
+                observationTime: currentWeather.ObservationTime,
+                
+                // METAR 資訊
+                metar: currentMetar ? {
+                    raw: currentMetar.MetarText, // 原始 METAR 報文
+                    visibility: currentMetar.Visibility, // 能見度
+                    ceiling: currentMetar.WeatherCeiling, // 雲幕高度
+                    dewPoint: currentMetar.DewpointTemperature, // 露點溫度
+                    pressure: currentMetar.AltimeterSetting, // 氣壓
+                    observationTime: currentMetar.DateTime // METAR 觀測時間
+                } : null
             };
 
             // 更新緩存

@@ -292,6 +292,62 @@ tr:hover {
     margin-top: 0.5rem;
 }
 
+/* METAR 天氣資訊樣式 */
+.weather-metar {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.weather-metar h4 {
+    color: #1a73e8;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.metar-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.metar-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.metar-raw {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.metar-raw code {
+    display: block;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background-color: #fff;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.metar-time {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    text-align: right;
+}
+
 /* 航空公司查詢區域 */
 .airline-search {
     margin: 2rem 0;
