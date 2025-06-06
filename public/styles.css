@@ -95,6 +95,37 @@ main {
     color: #555;
 }
 
+/* 航班代號提示樣式 */
+.flight-number-tips {
+    background-color: #fff3e0;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #ff9800;
+}
+
+.flight-number-tips ul {
+    list-style-type: none;
+    padding-left: 1rem;
+    margin-top: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+}
+
+.flight-number-tips li {
+    margin-bottom: 0.5rem;
+    color: #555;
+    padding: 0.3rem;
+}
+
+.tips-note {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+}
+
 .search-box {
     display: flex;
     gap: 1rem;
