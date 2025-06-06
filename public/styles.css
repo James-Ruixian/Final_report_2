@@ -95,6 +95,15 @@ main {
     color: #555;
 }
 
+/* 航班狀態樣式 */
+.delayed-flight {
+    background-color: #fff3e0;
+}
+
+.cancelled-flight {
+    background-color: #ffebee;
+}
+
 /* 航班代號提示樣式 */
 .flight-number-tips {
     background-color: #fff3e0;
@@ -179,9 +188,91 @@ tr:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+.weather-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.weather-main {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.temperature, .humidity {
+    padding: 1rem;
+}
+
+.temp-value, .humidity-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1a73e8;
+    display: block;
+    margin-top: 0.5rem;
+}
+
+.weather-extra {
+    display: grid;
+    gap: 0.8rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.observation-time {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
 /* 航空公司查詢區域 */
 .airline-search {
     margin: 2rem 0;
+}
+
+.airline-info {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 5px;
+    margin-top: 1rem;
+}
+
+.airline-info h4 {
+    color: #1a73e8;
+    margin-bottom: 0.5rem;
+}
+
+.routes-container {
+    margin-top: 1.5rem;
+}
+
+.route-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.route-item {
+    background-color: white;
+    padding: 0.8rem;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.route-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+.route-airports {
+    font-family: monospace;
+    font-size: 1.1rem;
 }
 
 #airline-select {

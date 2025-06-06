@@ -37,25 +37,51 @@ const getTDXToken = async () => {
     }
 };
 
-// API 路由
+// 即時航班資料路由
 app.get('/api/flights/:airport', async (req, res) => {
     try {
         const token = await getTDXToken();
         const { airport } = req.params;
         
+        // 同時獲取出發和抵達航班
+        const [departureRes, arrivalRes] = await Promise.all([
+            axios.get(
+                `https://tdx.transportdata.tw/api/basic/v2/Air/FIDS/Airport/${airport}?$filter=DepartureAirportID%20eq%20'${airport}'&$format=JSON`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            ),
+            axios.get(
+                `https://tdx.transportdata.tw/api/basic/v2/Air/FIDS/Airport/${airport}?$filter=ArrivalAirportID%20eq%20'${airport}'&$format=JSON`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+        ]);
+        
+        const flights = [...departureRes.data, ...arrivalRes.data].map(flight => ({
+            ...flight,
+            FlightType: flight.DepartureAirportID === airport ? 'Departure' : 'Arrival'
+        }));
+        
+        res.json(flights);
+    } catch (error) {
+        console.error('Error fetching flight data:', error);
+        res.status(500).json({ error: '無法獲取航班資料' });
+    }
+});
+
+// 定期航班資料路由
+app.get('/api/schedule/:airport', async (req, res) => {
+    try {
+        const token = await getTDXToken();
+        const { airport } = req.params;
+        
         const response = await axios.get(
-            `https://tdx.transportdata.tw/api/basic/v2/Air/FIDS/Airport/${airport}?$format=JSON`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
+            `https://tdx.transportdata.tw/api/basic/v2/Air/Schedule/Airport/${airport}?$format=JSON`,
+            { headers: { Authorization: `Bearer ${token}` } }
         );
         
         res.json(response.data);
     } catch (error) {
-        console.error('Error fetching flight data:', error);
-        res.status(500).json({ error: '無法獲取航班資料' });
+        console.error('Error fetching schedule data:', error);
+        res.status(500).json({ error: '無法獲取定期航班資料' });
     }
 });
 
@@ -65,16 +91,26 @@ app.get('/api/weather/:airport', async (req, res) => {
         const token = await getTDXToken();
         const { airport } = req.params;
         
-        const response = await axios.get(
+        const weatherResponse = await axios.get(
             `https://tdx.transportdata.tw/api/basic/v2/Air/Airport/Weather/${airport}?$format=JSON`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
+            { headers: { Authorization: `Bearer ${token}` } }
         );
-        
-        res.json(response.data);
+
+        const weatherData = weatherResponse.data;
+        if (weatherData && weatherData.length > 0) {
+            const currentWeather = weatherData[0];
+            const formattedWeather = {
+                temperature: currentWeather.Temperature,
+                humidity: currentWeather.Humidity,
+                description: currentWeather.WeatherDescription,
+                windSpeed: currentWeather.WindSpeed,
+                windDirection: currentWeather.WindDirection,
+                observationTime: currentWeather.ObservationTime
+            };
+            res.json(formattedWeather);
+        } else {
+            res.status(404).json({ error: '無法找到天氣資料' });
+        }
     } catch (error) {
         console.error('Error fetching weather data:', error);
         res.status(500).json({ error: '無法獲取天氣資料' });
@@ -86,19 +122,51 @@ app.get('/api/airlines', async (req, res) => {
     try {
         const token = await getTDXToken();
         
-        const response = await axios.get(
+        // 獲取航空公司基本資料
+        const airlineResponse = await axios.get(
             'https://tdx.transportdata.tw/api/basic/v2/Air/Airline?$format=JSON',
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // 獲取航空公司航線資料
+        const routeResponse = await axios.get(
+            'https://tdx.transportdata.tw/api/basic/v2/Air/Route/Airline?$format=JSON',
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // 合併航空公司資料和航線資料
+        const airlines = airlineResponse.data.map(airline => {
+            const routes = routeResponse.data.filter(route => 
+                route.AirlineID === airline.AirlineID
+            );
+            return {
+                ...airline,
+                routes: routes
+            };
+        });
+        
+        res.json(airlines);
+    } catch (error) {
+        console.error('Error fetching airline data:', error);
+        res.status(500).json({ error: '無法獲取航空公司資料' });
+    }
+});
+
+// 航空公司航線資料路由
+app.get('/api/airlines/:airlineId/routes', async (req, res) => {
+    try {
+        const token = await getTDXToken();
+        const { airlineId } = req.params;
+        
+        const response = await axios.get(
+            `https://tdx.transportdata.tw/api/basic/v2/Air/Route/Airline/${airlineId}?$format=JSON`,
+            { headers: { Authorization: `Bearer ${token}` } }
         );
         
         res.json(response.data);
     } catch (error) {
-        console.error('Error fetching airline data:', error);
-        res.status(500).json({ error: '無法獲取航空公司資料' });
+        console.error('Error fetching airline routes:', error);
+        res.status(500).json({ error: '無法獲取航空公司航線資料' });
     }
 });
 

@@ -82,16 +82,31 @@ function displayFlights(flights) {
         return;
     }
 
+    // 根據時間排序
+    flights.sort((a, b) => new Date(a.ScheduleTime) - new Date(b.ScheduleTime));
+
     flights.forEach(flight => {
         const row = document.createElement('tr');
+        const scheduledTime = formatDateTime(flight.ScheduleTime);
+        const actualTime = flight.ActualTime ? formatDateTime(flight.ActualTime) : '-';
+        const timeDisplay = flight.ActualTime ? `${scheduledTime} (實際: ${actualTime})` : scheduledTime;
+        
         row.innerHTML = `
             <td>${flight.AirlineID}${flight.FlightNumber}</td>
             <td>${flight.DepartureAirportID}</td>
             <td>${flight.ArrivalAirportID}</td>
-            <td>${formatDateTime(flight.ScheduleTime)}</td>
+            <td>${timeDisplay}</td>
             <td>${flight.Terminal || '-'}</td>
             <td>${getFlightStatus(flight.FlightStatus)}</td>
         `;
+        
+        // 根據航班狀態添加不同的樣式
+        if (flight.FlightStatus === 'Delayed') {
+            row.classList.add('delayed-flight');
+        } else if (flight.FlightStatus === 'Cancelled') {
+            row.classList.add('cancelled-flight');
+        }
+        
         tbody.appendChild(row);
     });
 }
@@ -110,20 +125,39 @@ async function loadWeather(airport) {
 
 // 顯示天氣資料
 function displayWeather(weather) {
-    if (!weather || !weather.length) {
+    if (!weather) {
         weatherData.innerHTML = '<p class="no-data">無天氣資料</p>';
         return;
     }
 
-    const currentWeather = weather[0];
+    const windDirection = getWindDirection(weather.windDirection);
     weatherData.innerHTML = `
         <div class="weather-details">
-            <p>溫度: ${currentWeather.Temperature}°C</p>
-            <p>濕度: ${currentWeather.Humidity}%</p>
-            <p>天氣狀況: ${currentWeather.WeatherDescription}</p>
-            <p>觀測時間: ${formatDateTime(currentWeather.ObservationTime)}</p>
+            <div class="weather-main">
+                <div class="temperature">
+                    <h4>溫度</h4>
+                    <span class="temp-value">${weather.temperature}°C</span>
+                </div>
+                <div class="humidity">
+                    <h4>濕度</h4>
+                    <span class="humidity-value">${weather.humidity}%</span>
+                </div>
+            </div>
+            <div class="weather-extra">
+                <p><strong>天氣狀況：</strong> ${weather.description}</p>
+                <p><strong>風速：</strong> ${weather.windSpeed} m/s</p>
+                <p><strong>風向：</strong> ${windDirection}</p>
+                <p class="observation-time"><strong>觀測時間：</strong> ${formatDateTime(weather.observationTime)}</p>
+            </div>
         </div>
     `;
+}
+
+// 取得風向說明
+function getWindDirection(degrees) {
+    const directions = ['北', '東北', '東', '東南', '南', '西南', '西', '西北'];
+    const index = Math.round(((degrees %= 360) < 0 ? degrees + 360 : degrees) / 45) % 8;
+    return `${directions[index]} (${degrees}°)`;
 }
 
 // 載入航空公司資料
@@ -138,9 +172,13 @@ async function loadAirlines() {
     }
 }
 
-// 填充航空公司選單
+// 填充航空公司選單和顯示航線資訊
 function populateAirlineSelect(airlines) {
     airlineSelect.innerHTML = '<option value="">請選擇航空公司</option>';
+    
+    // 按照航空公司代碼排序
+    airlines.sort((a, b) => a.AirlineID.localeCompare(b.AirlineID));
+    
     airlines.forEach(airline => {
         const option = document.createElement('option');
         option.value = airline.AirlineID;
@@ -148,7 +186,42 @@ function populateAirlineSelect(airlines) {
         airlineSelect.appendChild(option);
     });
 
-    airlineSelect.addEventListener('change', filterFlightsByAirline);
+    airlineSelect.addEventListener('change', async (e) => {
+        const selectedAirline = airlines.find(a => a.AirlineID === e.target.value);
+        if (selectedAirline) {
+            displayAirlineRoutes(selectedAirline);
+        } else {
+            airlineFlights.innerHTML = '';
+        }
+    });
+}
+
+// 顯示航空公司航線資訊
+async function displayAirlineRoutes(airline) {
+    try {
+        const response = await fetch(`/api/airlines/${airline.AirlineID}/routes`);
+        const routes = await response.json();
+        
+        airlineFlights.innerHTML = `
+            <div class="airline-info">
+                <h4>${airline.AirlineName.Zh_tw}</h4>
+                <p>IATA代碼: ${airline.AirlineID}</p>
+                <div class="routes-container">
+                    <h5>營運航線：</h5>
+                    <div class="route-list">
+                        ${routes.map(route => `
+                            <div class="route-item">
+                                <span class="route-airports">${route.DepartureAirportID} ⟶ ${route.ArrivalAirportID}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error fetching airline routes:', error);
+        airlineFlights.innerHTML = '<p class="error">無法載入航線資訊</p>';
+    }
 }
 
 // 設置航班搜尋
