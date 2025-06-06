@@ -2,7 +2,7 @@
 let currentAirport = '';
 const airports = {
     TPE: '桃園國際機場',
-    TSA: '松山機場',
+    TSA: '松山國際機場',
     KHH: '高雄國際機場',
     RMQ: '台中國際機場'
 };
@@ -10,9 +10,8 @@ const airports = {
 // DOM 元素
 const airportBtns = document.querySelectorAll('.airport-btn');
 const currentAirportTitle = document.getElementById('current-airport');
-const flightTable = document.getElementById('flight-table');
-const flightSearch = document.getElementById('flight-search');
-const airportFilter = document.getElementById('airport-filter');
+const flightButtons = document.getElementById('flight-buttons');
+const flightDetails = document.getElementById('flight-details');
 const weatherData = document.getElementById('weather-data');
 const airlineSelect = document.getElementById('airline-select');
 const airlineFlights = document.getElementById('airline-flights');
@@ -20,7 +19,6 @@ const airlineFlights = document.getElementById('airline-flights');
 // 初始化事件監聽器
 document.addEventListener('DOMContentLoaded', () => {
     setupAirportButtons();
-    setupFlightSearch();
     loadAirlines();
 });
 
@@ -74,11 +72,11 @@ async function loadFlights(airport) {
 
 // 顯示航班資料
 function displayFlights(flights) {
-    const tbody = document.getElementById('flight-data');
-    tbody.innerHTML = '';
+    flightButtons.innerHTML = '';
+    flightDetails.style.display = 'none';
 
     if (!flights.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="no-data">無航班資料</td></tr>';
+        flightButtons.innerHTML = '<div class="no-data">無航班資料</div>';
         return;
     }
 
@@ -86,29 +84,68 @@ function displayFlights(flights) {
     flights.sort((a, b) => new Date(a.ScheduleTime) - new Date(b.ScheduleTime));
 
     flights.forEach(flight => {
-        const row = document.createElement('tr');
-        const scheduledTime = formatDateTime(flight.ScheduleTime);
-        const actualTime = flight.ActualTime ? formatDateTime(flight.ActualTime) : '-';
-        const timeDisplay = flight.ActualTime ? `${scheduledTime} (實際: ${actualTime})` : scheduledTime;
-        
-        row.innerHTML = `
-            <td>${flight.AirlineID}${flight.FlightNumber}</td>
-            <td>${flight.DepartureAirportID}</td>
-            <td>${flight.ArrivalAirportID}</td>
-            <td>${timeDisplay}</td>
-            <td>${flight.Terminal || '-'}</td>
-            <td>${getFlightStatus(flight.FlightStatus)}</td>
-        `;
+        const button = document.createElement('button');
+        button.className = 'flight-button';
+        button.textContent = `${flight.AirlineID}${flight.FlightNumber}`;
         
         // 根據航班狀態添加不同的樣式
         if (flight.FlightStatus === 'Delayed') {
-            row.classList.add('delayed-flight');
+            button.style.borderColor = '#ff9800';
         } else if (flight.FlightStatus === 'Cancelled') {
-            row.classList.add('cancelled-flight');
+            button.style.borderColor = '#f44336';
         }
         
-        tbody.appendChild(row);
+        button.addEventListener('click', () => {
+            // 移除其他按鈕的選中狀態
+            document.querySelectorAll('.flight-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // 添加當前按鈕的選中狀態
+            button.classList.add('selected');
+            
+            // 顯示航班詳細資訊
+            showFlightDetails(flight);
+        });
+        
+        flightButtons.appendChild(button);
     });
+}
+
+// 顯示航班詳細資訊
+function showFlightDetails(flight) {
+    const scheduledTime = formatDateTime(flight.ScheduleTime);
+    const actualTime = flight.ActualTime ? formatDateTime(flight.ActualTime) : '-';
+    const timeDisplay = flight.ActualTime ? `${scheduledTime} (實際: ${actualTime})` : scheduledTime;
+
+    flightDetails.innerHTML = `
+        <h4>航班詳細資訊</h4>
+        <div class="flight-detail-item">
+            <span class="flight-detail-label">航班編號</span>
+            <span class="flight-detail-value">${flight.AirlineID}${flight.FlightNumber}</span>
+        </div>
+        <div class="flight-detail-item">
+            <span class="flight-detail-label">出發地</span>
+            <span class="flight-detail-value">${flight.DepartureAirportID}</span>
+        </div>
+        <div class="flight-detail-item">
+            <span class="flight-detail-label">目的地</span>
+            <span class="flight-detail-value">${flight.ArrivalAirportID}</span>
+        </div>
+        <div class="flight-detail-item">
+            <span class="flight-detail-label">時間</span>
+            <span class="flight-detail-value">${timeDisplay}</span>
+        </div>
+        <div class="flight-detail-item">
+            <span class="flight-detail-label">航廈</span>
+            <span class="flight-detail-value">${flight.Terminal || '-'}</span>
+        </div>
+        <div class="flight-detail-item">
+            <span class="flight-detail-label">狀態</span>
+            <span class="flight-detail-value">${getFlightStatus(flight.FlightStatus)}</span>
+        </div>
+    `;
+    flightDetails.style.display = 'block';
 }
 
 // 載入天氣資料
@@ -224,44 +261,6 @@ async function displayAirlineRoutes(airline) {
     }
 }
 
-// 設置航班搜尋
-function setupFlightSearch() {
-    // 航班號碼搜尋
-    flightSearch.addEventListener('input', filterFlights);
-    // 機場篩選
-    airportFilter.addEventListener('change', filterFlights);
-}
-
-// 篩選航班
-function filterFlights() {
-    const searchText = flightSearch.value.toUpperCase();
-    const selectedAirport = airportFilter.value.toUpperCase();
-    const rows = document.querySelectorAll('#flight-data tr');
-    
-    rows.forEach(row => {
-        const flightNumber = row.cells[0]?.textContent.toUpperCase() || '';
-        const departureAirport = row.cells[1]?.textContent.toUpperCase() || '';
-        const arrivalAirport = row.cells[2]?.textContent.toUpperCase() || '';
-        
-        const matchesSearch = flightNumber.includes(searchText);
-        const matchesAirport = !selectedAirport || 
-                             departureAirport === selectedAirport || 
-                             arrivalAirport === selectedAirport;
-        
-        row.style.display = (matchesSearch && matchesAirport) ? '' : 'none';
-    });
-}
-
-// 根據航空公司篩選航班
-function filterFlightsByAirline() {
-    const selectedAirline = airlineSelect.value;
-    const rows = document.querySelectorAll('#flight-data tr');
-    
-    rows.forEach(row => {
-        const flightNumber = row.cells[0]?.textContent || '';
-        row.style.display = !selectedAirline || flightNumber.startsWith(selectedAirline) ? '' : 'none';
-    });
-}
 
 // 格式化日期時間
 function formatDateTime(dateTimeString) {
@@ -293,8 +292,8 @@ function getFlightStatus(status) {
 function showLoading() {
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'loading';
-    flightTable.parentNode.insertBefore(loadingDiv, flightTable);
-    flightTable.style.display = 'none';
+    flightButtons.innerHTML = '';
+    flightButtons.appendChild(loadingDiv);
 }
 
 // 隱藏載入中
@@ -303,7 +302,6 @@ function hideLoading() {
     if (loadingDiv) {
         loadingDiv.remove();
     }
-    flightTable.style.display = '';
 }
 
 // 顯示錯誤訊息
@@ -311,6 +309,7 @@ function showError(message) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-message';
     errorDiv.textContent = message;
-    flightTable.parentNode.insertBefore(errorDiv, flightTable);
+    flightButtons.innerHTML = '';
+    flightButtons.appendChild(errorDiv);
     setTimeout(() => errorDiv.remove(), 3000);
 }

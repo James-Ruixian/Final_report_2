@@ -71,9 +71,72 @@ main {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* 航班資訊表格樣式 */
+/* 航班資訊區域樣式 */
 .flight-info {
     margin: 2rem 0;
+}
+
+/* 航班按鈕樣式 */
+.flight-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.flight-button {
+    padding: 1rem;
+    background-color: #fff;
+    border: 2px solid #1a73e8;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.flight-button:hover {
+    background-color: #e8f0fe;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.flight-button.selected {
+    background-color: #1a73e8;
+    color: white;
+}
+
+/* 航班詳細資訊樣式 */
+.flight-details {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    border-left: 4px solid #1a73e8;
+}
+
+.flight-details h4 {
+    color: #1a73e8;
+    margin-bottom: 1rem;
+}
+
+.flight-detail-item {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+    padding: 0.5rem;
+    background-color: white;
+    border-radius: 4px;
+}
+
+.flight-detail-label {
+    font-weight: bold;
+    color: #555;
+}
+
+.flight-detail-value {
+    color: #333;
 }
 
 .airport-info-tips {
