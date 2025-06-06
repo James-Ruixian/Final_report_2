@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣國際機場資訊系統</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <header>
+        <h1>台灣國際機場資訊系統</h1>
+        <nav class="airport-nav">
+            <button class="airport-btn" data-airport="TPE">桃園國際機場</button>
+            <button class="airport-btn" data-airport="TSA">松山機場</button>
+            <button class="airport-btn" data-airport="KHH">高雄國際機場</button>
+            <button class="airport-btn" data-airport="RMQ">台中國際機場</button>
+        </nav>
+    </header>
+
+    <main>
+        <section class="airport-info">
+            <h2 id="current-airport">請選擇機場</h2>
+            
+            <!-- 航班資訊區域 -->
+            <div class="flight-info">
+                <h3>即時航班資訊</h3>
+                <div class="search-box">
+                    <input type="text" id="flight-search" placeholder="搜尋航班號碼...">
+                </div>
+                <table id="flight-table">
+                    <thead>
+                        <tr>
+                            <th>航班編號</th>
+                            <th>出發地</th>
+                            <th>目的地</th>
+                            <th>預計時間</th>
+                            <th>航廈</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flight-data">
+                        <!-- 航班資料將由 JavaScript 動態插入 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 天氣資訊區域 -->
+            <div class="weather-info">
+                <h3>即時天氣資訊</h3>
+                <div id="weather-data">
+                    <!-- 天氣資料將由 JavaScript 動態插入 -->
+                </div>
+            </div>
+
+            <!-- 航空公司查詢區域 -->
+            <div class="airline-search">
+                <h3>航空公司查詢</h3>
+                <select id="airline-select">
+                    <option value="">請選擇航空公司</option>
+                    <!-- 航空公司選項將由 JavaScript 動態插入 -->
+                </select>
+                <div id="airline-flights">
+                    <!-- 特定航空公司航班資料將由 JavaScript 動態插入 -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>資料來源：TDX 運輸資料流通服務</p>
+    </footer>
+
+    <script src="/app.js"></script>
+</body>
+</html>
