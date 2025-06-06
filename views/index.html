@@ -11,7 +11,7 @@
         <h1>台灣國際機場資訊系統</h1>
         <nav class="airport-nav">
             <button class="airport-btn" data-airport="TPE">桃園國際機場</button>
-            <button class="airport-btn" data-airport="TSA">松山機場</button>
+            <button class="airport-btn" data-airport="TSA">松山國際機場</button>
             <button class="airport-btn" data-airport="KHH">高雄國際機場</button>
             <button class="airport-btn" data-airport="RMQ">台中國際機場</button>
         </nav>
@@ -24,8 +24,24 @@
             <!-- 航班資訊區域 -->
             <div class="flight-info">
                 <h3>即時航班資訊</h3>
+                <div class="airport-info-tips">
+                    <p><strong>機場代碼說明：</strong></p>
+                    <ul>
+                        <li>TPE - 桃園國際機場（台灣最大的國際機場）</li>
+                        <li>TSA - 松山機場（提供兩岸及部分亞洲航線）</li>
+                        <li>KHH - 高雄國際機場（南部主要國際機場）</li>
+                        <li>RMQ - 台中國際機場（中部主要國際機場）</li>
+                    </ul>
+                </div>
                 <div class="search-box">
                     <input type="text" id="flight-search" placeholder="搜尋航班號碼...">
+                    <select id="airport-filter" class="airport-filter">
+                        <option value="">全部機場</option>
+                        <option value="TPE">桃園國際機場 (TPE)</option>
+                        <option value="TSA">松山機場 (TSA)</option>
+                        <option value="KHH">高雄國際機場 (KHH)</option>
+                        <option value="RMQ">台中國際機場 (RMQ)</option>
+                    </select>
                 </div>
                 <table id="flight-table">
                     <thead>

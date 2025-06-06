@@ -76,8 +76,38 @@ main {
     margin: 2rem 0;
 }
 
+.airport-info-tips {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #1a73e8;
+}
+
+.airport-info-tips ul {
+    list-style-type: none;
+    padding-left: 1rem;
+    margin-top: 0.5rem;
+}
+
+.airport-info-tips li {
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
 .search-box {
+    display: flex;
+    gap: 1rem;
     margin-bottom: 1rem;
+}
+
+.search-box select.airport-filter {
+    width: 200px;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    background-color: white;
 }
 
 #flight-search {

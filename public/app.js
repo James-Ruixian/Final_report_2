@@ -12,6 +12,7 @@ const airportBtns = document.querySelectorAll('.airport-btn');
 const currentAirportTitle = document.getElementById('current-airport');
 const flightTable = document.getElementById('flight-table');
 const flightSearch = document.getElementById('flight-search');
+const airportFilter = document.getElementById('airport-filter');
 const weatherData = document.getElementById('weather-data');
 const airlineSelect = document.getElementById('airline-select');
 const airlineFlights = document.getElementById('airline-flights');
@@ -152,14 +153,29 @@ function populateAirlineSelect(airlines) {
 
 // 設置航班搜尋
 function setupFlightSearch() {
-    flightSearch.addEventListener('input', (e) => {
-        const searchText = e.target.value.toUpperCase();
-        const rows = document.querySelectorAll('#flight-data tr');
+    // 航班號碼搜尋
+    flightSearch.addEventListener('input', filterFlights);
+    // 機場篩選
+    airportFilter.addEventListener('change', filterFlights);
+}
+
+// 篩選航班
+function filterFlights() {
+    const searchText = flightSearch.value.toUpperCase();
+    const selectedAirport = airportFilter.value.toUpperCase();
+    const rows = document.querySelectorAll('#flight-data tr');
+    
+    rows.forEach(row => {
+        const flightNumber = row.cells[0]?.textContent.toUpperCase() || '';
+        const departureAirport = row.cells[1]?.textContent.toUpperCase() || '';
+        const arrivalAirport = row.cells[2]?.textContent.toUpperCase() || '';
         
-        rows.forEach(row => {
-            const flightNumber = row.cells[0]?.textContent.toUpperCase() || '';
-            row.style.display = flightNumber.includes(searchText) ? '' : 'none';
-        });
+        const matchesSearch = flightNumber.includes(searchText);
+        const matchesAirport = !selectedAirport || 
+                             departureAirport === selectedAirport || 
+                             arrivalAirport === selectedAirport;
+        
+        row.style.display = (matchesSearch && matchesAirport) ? '' : 'none';
     });
 }
 
