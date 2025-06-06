@@ -14,6 +14,27 @@ app.set('views', path.join(__dirname, 'views'));
 app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
 
+// 緩存管理
+const cache = {
+    flights: new Map(),
+    weather: new Map(),
+    airlines: null,
+    lastUpdate: new Map(),
+    cacheTimeout: 30 * 1000 // 30秒的緩存時間
+};
+
+// 檢查是否需要更新緩存
+function shouldUpdateCache(key) {
+    const lastUpdate = cache.lastUpdate.get(key);
+    if (!lastUpdate) return true;
+    return Date.now() - lastUpdate > cache.cacheTimeout;
+}
+
+// 更新緩存時間戳
+function updateCacheTimestamp(key) {
+    cache.lastUpdate.set(key, Date.now());
+}
+
 // TDX API 認證資訊
 const getTDXToken = async () => {
     try {
@@ -40,8 +61,17 @@ const getTDXToken = async () => {
 // 即時航班資料路由
 app.get('/api/flights/:airport', async (req, res) => {
     try {
-        const token = await getTDXToken();
         const { airport } = req.params;
+        const cacheKey = `flights_${airport}`;
+
+        // 檢查緩存
+        if (!shouldUpdateCache(cacheKey) && cache.flights.has(airport)) {
+            console.log(`返回緩存的航班資料 - ${airport}`);
+            return res.json(cache.flights.get(airport));
+        }
+
+        console.log(`從 TDX API 獲取航班資料 - ${airport}`);
+        const token = await getTDXToken();
         
         // 同時獲取出發和抵達航班
         const [departureRes, arrivalRes] = await Promise.all([
@@ -59,6 +89,10 @@ app.get('/api/flights/:airport', async (req, res) => {
             ...flight,
             FlightType: flight.DepartureAirportID === airport ? 'Departure' : 'Arrival'
         }));
+
+        // 更新緩存
+        cache.flights.set(airport, flights);
+        updateCacheTimestamp(cacheKey);
         
         res.json(flights);
     } catch (error) {
@@ -88,8 +122,17 @@ app.get('/api/schedule/:airport', async (req, res) => {
 // 天氣資料路由
 app.get('/api/weather/:airport', async (req, res) => {
     try {
-        const token = await getTDXToken();
         const { airport } = req.params;
+        const cacheKey = `weather_${airport}`;
+
+        // 檢查緩存
+        if (!shouldUpdateCache(cacheKey) && cache.weather.has(airport)) {
+            console.log(`返回緩存的天氣資料 - ${airport}`);
+            return res.json(cache.weather.get(airport));
+        }
+
+        console.log(`從 TDX API 獲取天氣資料 - ${airport}`);
+        const token = await getTDXToken();
         
         const weatherResponse = await axios.get(
             `https://tdx.transportdata.tw/api/basic/v2/Air/Airport/Weather/${airport}?$format=JSON`,
@@ -107,6 +150,11 @@ app.get('/api/weather/:airport', async (req, res) => {
                 windDirection: currentWeather.WindDirection,
                 observationTime: currentWeather.ObservationTime
             };
+
+            // 更新緩存
+            cache.weather.set(airport, formattedWeather);
+            updateCacheTimestamp(cacheKey);
+
             res.json(formattedWeather);
         } else {
             res.status(404).json({ error: '無法找到天氣資料' });
@@ -120,6 +168,15 @@ app.get('/api/weather/:airport', async (req, res) => {
 // 航空公司資料路由
 app.get('/api/airlines', async (req, res) => {
     try {
+        const cacheKey = 'airlines';
+
+        // 檢查緩存
+        if (!shouldUpdateCache(cacheKey) && cache.airlines) {
+            console.log('返回緩存的航空公司資料');
+            return res.json(cache.airlines);
+        }
+
+        console.log('從 TDX API 獲取航空公司資料');
         const token = await getTDXToken();
         
         // 獲取航空公司基本資料
@@ -144,6 +201,10 @@ app.get('/api/airlines', async (req, res) => {
                 routes: routes
             };
         });
+
+        // 更新緩存
+        cache.airlines = airlines;
+        updateCacheTimestamp(cacheKey);
         
         res.json(airlines);
     } catch (error) {
