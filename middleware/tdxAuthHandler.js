@@ -59,11 +59,11 @@ class TdxAuthHandler {
 
             // 獲取新的 token
             const response = await axios.post(
-                tdxConfig.auth.tokenUrl,
+                'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token',
                 new URLSearchParams({
                     grant_type: 'client_credentials',
-                    client_id: tdxConfig.auth.clientId,
-                    client_secret: tdxConfig.auth.clientSecret
+                    client_id: process.env.TDX_CLIENT_ID,
+                    client_secret: process.env.TDX_CLIENT_SECRET
                 }),
                 {
                     headers: {

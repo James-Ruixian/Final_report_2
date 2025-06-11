@@ -7,12 +7,13 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 
-// 導入路由處理器
+// 導入路由處理器和中間件
 const apiRoutes = require('./routes/apiRouteHandler');
+const { authenticate } = require('./middleware/tdxAuthHandler');
 
 // 創建 Express 應用
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3030;
 
 /**
  * 中間件配置
@@ -41,8 +42,8 @@ app.set('view engine', 'html');
 /**
  * 路由配置
  */
-// API 路由
-app.use('/api', apiRoutes);
+// API 路由（加入 TDX 認證中間件）
+app.use('/api', authenticate, apiRoutes);
 
 // 首頁路由
 app.get('/', (req, res) => {

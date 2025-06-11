@@ -8,6 +8,7 @@ const axios = require('axios');
 const tdxConfig = require('../config/tdxConfig');
 const cacheHandler = require('../utils/cacheHandler');
 const { getAuthHeaders } = require('../middleware/tdxAuthHandler');
+const requestController = require('../utils/requestController');
 
 class AirlineDataHandler {
     /**
@@ -28,8 +29,8 @@ class AirlineDataHandler {
 
             // 獲取航空公司基本資料和航線資料
             const [airlines, routes] = await Promise.all([
-                this.fetchAirlineBasicInfo(headers),
-                this.fetchAirlineRoutes(headers)
+                requestController.executeRequest(() => this.fetchAirlineBasicInfo(headers)),
+                requestController.executeRequest(() => this.fetchAirlineRoutes(headers))
             ]);
 
             // 整合數據
@@ -41,7 +42,8 @@ class AirlineDataHandler {
             return integratedData;
 
         } catch (error) {
-            console.error('獲取航空公司資料時發生錯誤:', error);
+            const message = error.response?.data?.Message || error.message;
+            console.error('❌ 獲取航空公司資料時發生錯誤:', message);
             throw error;
         }
     }
@@ -54,20 +56,23 @@ class AirlineDataHandler {
     async getAirlineRoutes(airlineId) {
         try {
             const headers = await getAuthHeaders();
-            const response = await axios.get(
-                tdxConfig.endpoints.airline.routes(airlineId),
-                {
-                    headers,
-                    params: {
-                        '$format': 'JSON',
-                        '$orderby': 'DepartureAirportID'
+            const response = await requestController.executeRequest(() => 
+                axios.get(
+                    tdxConfig.endpoints.airline.routes(airlineId),
+                    {
+                        headers,
+                        params: {
+                            '$format': 'JSON',
+                            '$orderby': 'DepartureAirportID'
+                        }
                     }
-                }
+                )
             );
 
             return this.formatRouteData(response.data);
         } catch (error) {
-            console.error(`獲取航空公司 ${airlineId} 航線資料時發生錯誤:`, error);
+            const message = error.response?.data?.Message || error.message;
+            console.error(`❌ 獲取航空公司 ${airlineId} 航線資料錯誤:`, message);
             throw error;
         }
     }
@@ -77,17 +82,24 @@ class AirlineDataHandler {
      * @private
      */
     async fetchAirlineBasicInfo(headers) {
-        const response = await axios.get(
-            tdxConfig.endpoints.airline.base,
-            {
-                headers,
-                params: {
-                    '$format': 'JSON',
-                    '$orderby': 'AirlineID'
-                }
-            }
-        );
-        return response.data;
+        try {
+            const response = await requestController.executeRequest(() =>
+                axios.get(
+                    tdxConfig.endpoints.airline.base,
+                    {
+                        headers,
+                        params: {
+                            '$format': 'JSON',
+                            '$orderby': 'AirlineID'
+                        }
+                    }
+                )
+            );
+            return response.data;
+        } catch (error) {
+            console.error('❌ 獲取航空公司基本資料時發生錯誤:', error.message);
+            throw error;
+        }
     }
 
     /**
@@ -95,16 +107,23 @@ class AirlineDataHandler {
      * @private
      */
     async fetchAirlineRoutes(headers) {
-        const response = await axios.get(
-            tdxConfig.endpoints.airline.routes(''),
-            {
-                headers,
-                params: {
-                    '$format': 'JSON'
-                }
-            }
-        );
-        return response.data;
+        try {
+            const response = await requestController.executeRequest(() =>
+                axios.get(
+                    tdxConfig.endpoints.airline.routes(), // 注意這裡不傳參數
+                    {
+                        headers,
+                        params: {
+                            '$format': 'JSON'
+                        }
+                    }
+                )
+            );
+            return response.data;
+        } catch (error) {
+            console.error('❌ 獲取航空公司航線資料時發生錯誤:', error.message);
+            throw error;
+        }
     }
 
     /**
@@ -170,5 +189,4 @@ class AirlineDataHandler {
     }
 }
 
-// 導出單例
 module.exports = new AirlineDataHandler();

@@ -5,12 +5,14 @@
 
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
+const tdxConfig = require('../config/tdxConfig');
 
 // 導入處理器
 const airportFlightHandler = require('../services/airportFlightHandler');
 const airportWeatherHandler = require('../services/airportWeatherHandler');
 const airlineDataHandler = require('../services/airlineDataHandler');
-const { authenticate } = require('../middleware/tdxAuthHandler');
+const { authenticate, getAuthHeaders } = require('../middleware/tdxAuthHandler');
 
 // 機場航班相關路由
 router.get('/flights/:airport', authenticate, async (req, res) => {
@@ -79,8 +81,27 @@ router.get('/airlines/:airlineId/routes', authenticate, async (req, res) => {
 router.get('/schedule/:airport', authenticate, async (req, res) => {
     try {
         const { airport } = req.params;
-        const schedule = await airportFlightHandler.getScheduledFlights(airport);
-        res.json(schedule);
+        const response = await axios.get(
+            tdxConfig.endpoints.flight.schedule(airport),
+            {
+                headers: await getAuthHeaders(),
+                params: {
+                    '$format': 'JSON',
+                    '$select': [
+                        'AirlineID',
+                        'FlightNumber',
+                        'DepartureAirportID',
+                        'ArrivalAirportID',
+                        'DepartureTime',
+                        'ArrivalTime',
+                        'ServiceDays',
+                        'AirlineName'
+                    ].join(',')
+                }
+            }
+        );
+        
+        res.json(response.data);
     } catch (error) {
         console.error('處理定期航班請求時發生錯誤:', error);
         res.status(500).json({

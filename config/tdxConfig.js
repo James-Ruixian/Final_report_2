@@ -3,8 +3,7 @@
  * 集中管理 TDX API 的端點和認證設定
  * 
  * @module tdxConfig
- * @author Your Name
- * @description 此模組用於管理 TDX 運輸資料流通服務的相關配置，包括：
+ * @description 管理 TDX 運輸資料流通服務的相關配置，包括：
  * - API 認證資訊
  * - API 端點配置
  * - 請求參數設定
@@ -34,17 +33,15 @@ const tdxConfig = {
          */
         flight: {
             /**
-             * 機場航班資訊查詢端點
+             * 機場即時航班資訊
              * @param {string} airport - 機場代碼
-             * @returns {string} API 端點 URL
              */
             fids: (airport) => 
                 `https://tdx.transportdata.tw/api/basic/v2/Air/FIDS/Airport/${airport}`,
 
             /**
-             * 定期航班查詢端點
+             * 定期航班資訊
              * @param {string} airport - 機場代碼
-             * @returns {string} API 端點 URL
              */
             schedule: (airport) => 
                 `https://tdx.transportdata.tw/api/basic/v2/Air/Schedule/Airport/${airport}`
@@ -55,9 +52,8 @@ const tdxConfig = {
          */
         weather: {
             /**
-             * METAR 天氣資訊查詢端點
+             * METAR 天氣資訊
              * @param {string} airport - 機場代碼
-             * @returns {string} API 端點 URL
              */
             metar: (airport) => 
                 `https://tdx.transportdata.tw/api/basic/v2/Air/METAR/Airport/${airport}`
@@ -68,26 +64,26 @@ const tdxConfig = {
          */
         airline: {
             /**
-             * 航空公司基本資料查詢端點
+             * 航空公司基本資料
              */
             base: 'https://tdx.transportdata.tw/api/basic/v2/Air/Airline',
 
             /**
-             * 航空公司航線查詢端點
-             * @param {string} airlineId - 航空公司代碼
-             * @returns {string} API 端點 URL
+             * 航空公司航線資訊
+             * @param {string} [airlineId] - 航空公司代碼（可選）
+             * @returns {string} API URL
              */
-            routes: (airlineId) => 
-                `https://tdx.transportdata.tw/api/basic/v2/Air/Route/Airline/${airlineId}`
+            routes: (airlineId = '') => 
+                `https://tdx.transportdata.tw/api/basic/v2/Air/Route/Airline/${airlineId ? airlineId : ''}`
         }
     },
 
     /**
-     * API 請求配置
+     * API 請求通用設定
      */
     requestConfig: {
         format: 'JSON',
-        cacheTimeout: 30 * 1000, // 緩存時間 (30 秒)
+        cacheTimeout: 180 * 1000, // 緩存時間（3 分鐘）
         headers: {
             'Content-Type': 'application/json'
         }

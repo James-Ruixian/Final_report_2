@@ -14,6 +14,7 @@ const axios = require('axios');
 const tdxConfig = require('../config/tdxConfig');
 const cacheHandler = require('../utils/cacheHandler');
 const { getAuthHeaders } = require('../middleware/tdxAuthHandler');
+const requestController = require('../utils/requestController');
 
 class AirportFlightHandler {
     /**
@@ -35,15 +36,16 @@ class AirportFlightHandler {
 
             // 獲取出發和抵達航班資料
             const headers = await getAuthHeaders();
+            
             const [departureRes, arrivalRes] = await Promise.all([
-                this.getDepartureFlights(airport, headers),
-                this.getArrivalFlights(airport, headers)
+                requestController.executeRequest(() => this.getDepartureFlights(airport, headers)),
+                requestController.executeRequest(() => this.getArrivalFlights(airport, headers))
             ]);
 
             // 合併並格式化航班資料
             const flights = [
-                ...this.formatFlights(departureRes.data, 'Departure'),
-                ...this.formatFlights(arrivalRes.data, 'Arrival')
+                ...this.formatFlights(departureRes.data || [], 'Departure'),
+                ...this.formatFlights(arrivalRes.data || [], 'Arrival')
             ];
 
             // 根據時間排序
@@ -74,11 +76,11 @@ class AirportFlightHandler {
             tdxConfig.endpoints.flight.fids(airport),
             {
                 headers,
-                params: {
-                    '$format': 'JSON',
-                    '$filter': `DepartureAirportID eq '${airport}'`,
-                    '$orderby': 'ScheduleTime'
-                }
+                    params: {
+                        '$format': 'JSON',
+                        '$filter': `FromAirportID eq '${airport}'`,
+                        '$orderby': 'DepartureTime'
+                    }
             }
         );
     }
@@ -95,11 +97,11 @@ class AirportFlightHandler {
             tdxConfig.endpoints.flight.fids(airport),
             {
                 headers,
-                params: {
-                    '$format': 'JSON',
-                    '$filter': `ArrivalAirportID eq '${airport}'`,
-                    '$orderby': 'ScheduleTime'
-                }
+                    params: {
+                        '$format': 'JSON',
+                        '$filter': `ToAirportID eq '${airport}'`,
+                        '$orderby': 'ArrivalTime'
+                    }
             }
         );
     }
@@ -118,9 +120,9 @@ class AirportFlightHandler {
             type: type,
             departureAirport: flight.DepartureAirportID,
             arrivalAirport: flight.ArrivalAirportID,
-            scheduledTime: flight.ScheduleTime,
-            actualTime: flight.ActualTime,
-            estimatedTime: flight.EstimatedTime,
+            scheduledTime: type === 'Departure' ? flight.ScheduleDepartureTime : flight.ScheduleArrivalTime,
+            actualTime: type === 'Departure' ? flight.ActualDepartureTime : flight.ActualArrivalTime,
+            estimatedTime: type === 'Departure' ? flight.EstimatedDepartureTime : flight.EstimatedArrivalTime,
             terminal: flight.Terminal || null,
             gate: flight.Gate || null,
             status: this.getFlightStatus(flight.FlightStatus),
@@ -166,12 +168,12 @@ class AirportFlightHandler {
                     headers,
                     params: {
                         '$format': 'JSON',
-                        '$orderby': 'ScheduleTime'
+                        '$select': 'AirlineID,FlightNumber,DepartureAirportID,ArrivalAirportID,DepartureTime,ArrivalTime,ServiceDays'
                     }
                 }
             );
 
-            return this.formatScheduleFlights(response.data);
+            return this.formatScheduleFlights(response.data || []);
         } catch (error) {
             console.error(`獲取 ${airport} 定期航班資料時發生錯誤:`, error);
             throw error;
@@ -189,10 +191,9 @@ class AirportFlightHandler {
             flightNumber: `${flight.AirlineID}${flight.FlightNumber}`,
             airlineId: flight.AirlineID,
             route: `${flight.DepartureAirportID} → ${flight.ArrivalAirportID}`,
-            scheduleTime: flight.ScheduleTime,
-            frequency: this.formatScheduleDays(flight.ServiceDays), // 營運日期
-            aircraft: flight.AircraftType || '未指定',
-            remarks: flight.Remarks || null
+            departureTime: flight.DepartureTime,
+            arrivalTime: flight.ArrivalTime,
+            frequency: this.formatScheduleDays(flight.ServiceDays)
         }));
     }
 
@@ -207,13 +208,13 @@ class AirportFlightHandler {
             return '未指定營運日期';
         }
 
-        const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+        const weekDays = ['一', '二', '三', '四', '五', '六', '日'];
         const operatingDays = days
             .map((operates, index) => operates ? weekDays[index] : null)
             .filter(Boolean);
 
         return operatingDays.length > 0 ? 
-            operatingDays.join(', ') : 
+            operatingDays.join('、') : 
             '未指定營運日期';
     }
 }

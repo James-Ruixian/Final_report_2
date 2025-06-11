@@ -1,10 +1,21 @@
 // 全局變數
 let currentAirport = '';
+let autoRefreshInterval = null;
+let currentFlights = [];
+
 const airports = {
     TPE: '桃園國際機場',
     TSA: '松山國際機場',
     KHH: '高雄國際機場',
     RMQ: '台中國際機場'
+};
+
+// 過濾器設置
+const filters = {
+    date: null,
+    timeRange: '',
+    terminal: '',
+    searchText: ''
 };
 
 // DOM 元素
@@ -15,12 +26,145 @@ const flightDetails = document.getElementById('flight-details');
 const weatherData = document.getElementById('weather-data');
 const airlineSelect = document.getElementById('airline-select');
 const airlineFlights = document.getElementById('airline-flights');
+const tabBtns = document.querySelectorAll('.tab-btn');
+const scheduleTbody = document.getElementById('schedule-tbody');
 
 // 初始化事件監聽器
 document.addEventListener('DOMContentLoaded', () => {
     setupAirportButtons();
+    setupTabButtons();
     loadAirlines();
+    setupFilters();
+    setupAutoRefresh();
+    setupPrintButton();
 });
+
+// 設置過濾器
+function setupFilters() {
+    // 設置日期過濾器
+    const dateFilter = document.getElementById('date-filter');
+    dateFilter.valueAsDate = new Date();
+    dateFilter.addEventListener('change', () => {
+        filters.date = dateFilter.value;
+        applyFilters();
+    });
+
+    // 設置時段過濾器
+    document.getElementById('time-range').addEventListener('change', (e) => {
+        filters.timeRange = e.target.value;
+        applyFilters();
+    });
+
+    // 設置航廈過濾器
+    document.getElementById('terminal-filter').addEventListener('change', (e) => {
+        filters.terminal = e.target.value;
+        applyFilters();
+    });
+
+    // 設置搜尋功能
+    document.getElementById('flight-search').addEventListener('input', (e) => {
+        filters.searchText = e.target.value.toLowerCase();
+        applyFilters();
+    });
+
+    // 設置重新整理按鈕
+    document.getElementById('refresh-btn').addEventListener('click', () => {
+        if (currentAirport) {
+            loadAirportData(currentAirport);
+        }
+    });
+}
+
+// 設置自動更新
+function setupAutoRefresh() {
+    const autoRefreshToggle = document.getElementById('auto-refresh-toggle');
+    autoRefreshToggle.addEventListener('change', () => {
+        if (autoRefreshToggle.checked) {
+            // 每5分鐘更新一次
+            autoRefreshInterval = setInterval(() => {
+                if (currentAirport) {
+                    loadAirportData(currentAirport);
+                }
+            }, 5 * 60 * 1000);
+        } else {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+    });
+}
+
+// 設置列印功能
+function setupPrintButton() {
+    document.getElementById('print-btn').addEventListener('click', () => {
+        window.print();
+    });
+}
+
+// 應用過濾器
+function applyFilters() {
+    if (!currentFlights.length) return;
+
+    const filteredFlights = currentFlights.filter(flight => {
+        // 檢查日期
+        if (filters.date) {
+            const flightDate = new Date(flight.ScheduleTime).toISOString().split('T')[0];
+            if (flightDate !== filters.date) return false;
+        }
+
+        // 檢查時段
+        if (filters.timeRange) {
+            const flightHour = new Date(flight.ScheduleTime).getHours();
+            const [start, end] = filters.timeRange.split('-').map(Number);
+            if (flightHour < start || flightHour >= end) return false;
+        }
+
+        // 檢查航廈
+        if (filters.terminal && flight.Terminal !== filters.terminal) {
+            return false;
+        }
+
+        // 檢查搜尋文字
+        if (filters.searchText) {
+            const searchFields = [
+                `${flight.AirlineID}${flight.FlightNumber}`, // 航班號碼
+                flight.AirlineName?.Zh_tw || '', // 航空公司
+                flight.DepartureAirportID || '', // 出發地
+                flight.ArrivalAirportID || ''    // 目的地
+            ].map(field => field.toLowerCase());
+
+            return searchFields.some(field => field.includes(filters.searchText));
+        }
+
+        return true;
+    });
+
+    displayFlights(filteredFlights);
+}
+
+// 設置分頁按鈕
+function setupTabButtons() {
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.dataset.tab;
+            
+            // 更新按鈕狀態
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // 更新內容顯示
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-flights`).classList.add('active');
+
+            // 如果切換到定期航班頁面且有選中的機場，則載入定期航班數據
+            if (tabId === 'scheduled' && currentAirport) {
+                loadScheduledFlights(currentAirport);
+            }
+        });
+    });
+}
 
 // 設置機場按鈕
 function setupAirportButtons() {
@@ -48,7 +192,8 @@ async function loadAirportData(airport) {
         showLoading();
         await Promise.all([
             loadFlights(airport),
-            loadWeather(airport)
+            loadWeather(airport),
+            loadScheduledFlights(airport)
         ]);
     } catch (error) {
         console.error('載入機場資料時發生錯誤:', error);
@@ -58,12 +203,69 @@ async function loadAirportData(airport) {
     }
 }
 
+// 載入定期航班數據
+async function loadScheduledFlights(airport) {
+    try {
+        const response = await fetch(`/api/schedule/${airport}`);
+        const data = await response.json();
+        displayScheduledFlights(data);
+    } catch (error) {
+        console.error('載入定期航班資料時發生錯誤:', error);
+        showError('無法載入定期航班資料');
+    }
+}
+
+// 顯示定期航班數據
+function displayScheduledFlights(flights) {
+    scheduleTbody.innerHTML = '';
+    
+    if (!flights || !flights.length) {
+        scheduleTbody.innerHTML = '<tr><td colspan="5" class="no-data">無定期航班資料</td></tr>';
+        return;
+    }
+
+    // 根據時間排序
+    flights.sort((a, b) => {
+        const timeA = a.DepartureTime || a.ArrivalTime;
+        const timeB = b.DepartureTime || b.ArrivalTime;
+        return timeA.localeCompare(timeB);
+    });
+
+    flights.forEach(flight => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${flight.AirlineID}${flight.FlightNumber}</td>
+            <td>${flight.AirlineName?.Zh_tw || flight.AirlineID}</td>
+            <td>${flight.OriginAirportID || flight.DepartureAirportID} → ${flight.DestinationAirportID || flight.ArrivalAirportID}</td>
+            <td>${formatWeekdays(flight.ServiceDays)}</td>
+            <td>${formatScheduleTime(flight.DepartureTime || flight.ArrivalTime)}</td>
+        `;
+        scheduleTbody.appendChild(row);
+    });
+}
+
+// 格式化星期幾
+function formatWeekdays(days) {
+    if (!days) return '-';
+    const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+    return days.map((isOperating, index) => 
+        isOperating ? weekdays[index] : '').filter(day => day).join('、');
+}
+
+// 格式化時刻表時間
+function formatScheduleTime(time) {
+    if (!time) return '-';
+    const [hours, minutes] = time.split(':');
+    return `${hours}:${minutes}`;
+}
+
 // 載入航班資料
 async function loadFlights(airport) {
     try {
         const response = await fetch(`/api/flights/${airport}`);
         const data = await response.json();
-        displayFlights(data);
+        currentFlights = data; // 保存航班數據
+        applyFilters(); // 應用過濾器
     } catch (error) {
         console.error('載入航班資料時發生錯誤:', error);
         showError('無法載入航班資料');

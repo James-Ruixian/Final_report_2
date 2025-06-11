@@ -13,6 +13,7 @@ const axios = require('axios');
 const tdxConfig = require('../config/tdxConfig');
 const cacheHandler = require('../utils/cacheHandler');
 const { getAuthHeaders } = require('../middleware/tdxAuthHandler');
+const requestController = require('../utils/requestController');
 
 class AirportWeatherHandler {
     /**
@@ -35,25 +36,27 @@ class AirportWeatherHandler {
             
             // 獲取 METAR 資料
             const headers = await getAuthHeaders();
-            const response = await axios.get(
-                tdxConfig.endpoints.weather.metar(airport),
-                {
-                    headers,
-                    params: {
-                        '$format': 'JSON',
-                        '$select': [
-                            'StationID',
-                            'AltimeterSetting',
-                            'WeatherPhenomena',
-                            'Temperature',
-                            'DewpointTemperature',
-                            'WindDirection',
-                            'WindSpeed',
-                            'Visibility',
-                            'DateTime'
-                        ].join(',')
+            const response = await requestController.executeRequest(() => 
+                axios.get(
+                    tdxConfig.endpoints.weather.metar(airport),
+                    {
+                        headers,
+                        params: {
+                            '$format': 'JSON',
+                            '$select': [
+                                'StationID',
+                                'WeatherState',
+                                'Temperature',
+                                'DewPointTemperature',
+                                'WindDirection',
+                                'WindSpeed',
+                                'Visibility',
+                                'ObservationTime',
+                                'MetarText'
+                            ].join(',')
+                        }
                     }
-                }
+                )
             );
 
             const metarData = response.data;
@@ -89,18 +92,18 @@ class AirportWeatherHandler {
                 metarData.Temperature,
                 metarData.DewpointTemperature
             ),
-            description: metarData.WeatherPhenomena || '無天氣描述',
+            description: metarData.WeatherState || '無天氣描述',
             windSpeed: this.parseNumber(metarData.WindSpeed),
             windDirection: this.parseNumber(metarData.WindDirection),
-            observationTime: metarData.DateTime,
+            observationTime: metarData.ObservationTime,
 
             // METAR 詳細資訊
             metar: {
                 visibility: this.parseNumber(metarData.Visibility),
                 dewPoint: this.parseNumber(metarData.DewpointTemperature),
-                pressure: this.parseNumber(metarData.AltimeterSetting),
+                pressure: null,
                 raw: metarData.MetarText || null,
-                observationTime: metarData.DateTime
+                observationTime: metarData.ObservationTime
             }
         };
     }

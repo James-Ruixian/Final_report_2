@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>台灣國際機場資訊系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons&display=swap&lang=zh-TW" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -23,7 +24,49 @@
             
             <!-- 航班資訊區域 -->
             <div class="flight-info">
-                <h3>即時航班資訊</h3>
+                <div class="flight-tabs">
+                    <button class="tab-btn active" data-tab="realtime">即時航班</button>
+                    <button class="tab-btn" data-tab="scheduled">定期航班</button>
+                </div>
+                <div id="realtime-flights" class="tab-content active">
+                    <h3>即時航班資訊</h3>
+                    
+                    <!-- 篩選與搜尋區域 -->
+                    <div class="filters-container">
+                        <div class="filter-group">
+                            <input type="date" id="date-filter" class="filter-input" title="選擇日期">
+                            <select id="time-range" class="filter-input">
+                                <option value="">全時段</option>
+                                <option value="00-06">00:00-06:00</option>
+                                <option value="06-12">06:00-12:00</option>
+                                <option value="12-18">12:00-18:00</option>
+                                <option value="18-24">18:00-24:00</option>
+                            </select>
+                            <select id="terminal-filter" class="filter-input">
+                                <option value="">全部航廈</option>
+                                <option value="T1">第一航廈</option>
+                                <option value="T2">第二航廈</option>
+                                <option value="T3">第三航廈</option>
+                            </select>
+                        </div>
+                        <div class="search-group">
+                            <input type="text" id="flight-search" class="filter-input" placeholder="搜尋航班號碼/航空公司/城市">
+                            <div class="button-group">
+                                <button id="refresh-btn" class="action-btn">
+                                    <span class="material-icons">更新</span>
+                                    重新整理
+                                </button>
+                                <button id="print-btn" class="action-btn">
+                                    <span class="material-icons">列印</span>
+                                    列印
+                                </button>
+                            </div>
+                            <div class="auto-refresh">
+                                <input type="checkbox" id="auto-refresh-toggle">
+                                <label for="auto-refresh-toggle">自動更新（每5分鐘）</label>
+                            </div>
+                        </div>
+                    </div>
 
                 <div class="flight-number-tips">
                     <p><strong>常見航班代號說明：</strong></p>
@@ -40,6 +83,23 @@
                 </div>
                 <div id="flight-details" class="flight-details" style="display: none;">
                     <!-- 選中航班的詳細資訊將在這裡顯示 -->
+                </div>
+                <div id="scheduled-flights" class="tab-content">
+                    <h3>定期航班資訊</h3>
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>航班編號</th>
+                                <th>航空公司</th>
+                                <th>出發/目的地</th>
+                                <th>班期</th>
+                                <th>起降時間</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule-tbody">
+                            <!-- 定期航班數據將由 JavaScript 動態插入 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
