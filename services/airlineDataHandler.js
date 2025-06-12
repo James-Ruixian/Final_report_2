@@ -37,7 +37,7 @@ class AirlineDataHandler {
             const integratedData = this.integrateAirlineData(airlines, routes);
 
             // 更新緩存
-            cacheHandler.set('airlines', null, integratedData);
+            cacheHandler.set('airlines', 'global', integratedData);
 
             return integratedData;
 

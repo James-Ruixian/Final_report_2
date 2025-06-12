@@ -43,8 +43,8 @@ const tdxConfig = {
              * 定期航班資訊
              * @param {string} airport - 機場代碼
              */
-            schedule: (airport) => 
-                `https://tdx.transportdata.tw/api/basic/v2/Air/Schedule/Airport/${airport}`
+            schedule: (airport) =>
+                `https://tdx.transportdata.tw/api/basic/v2/Air/Aircraft/Schedule/Airport/${airport}`
         },
 
         /**

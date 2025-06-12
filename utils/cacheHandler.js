@@ -28,7 +28,7 @@ class CacheHandler {
         this.caches = {
             flights: new Map(),    // 航班資料快取
             weather: new Map(),    // 天氣資料快取
-            airlines: null,        // 航空公司資料快取
+            airlines: new Map(),   // 航空公司資料快取
             lastUpdate: new Map()  // 最後更新時間紀錄
         };
         
@@ -55,11 +55,7 @@ class CacheHandler {
         }
 
         // 根據類型返回相應的快取
-        if (type === 'airlines') {
-            return this.caches.airlines;
-        }
-        
-        const data = key ? this.caches[type].get(key) : null;
+        const data = this.caches[type].get(key || 'global');
         console.log(`獲取快取資料: ${type}_${key}, 資料${data ? '存在' : '不存在'}`);
         return data;
     }
@@ -76,11 +72,7 @@ class CacheHandler {
             return;
         }
 
-        if (type === 'airlines') {
-            this.caches.airlines = data;
-        } else {
-            this.caches[type].set(key, data);
-        }
+        this.caches[type].set(key || 'global', data);
 
         // 更新時間戳
         this.caches.lastUpdate.set(
@@ -136,9 +128,7 @@ class CacheHandler {
             return;
         }
 
-        if (type === 'airlines') {
-            this.caches.airlines = null;
-        } else if (key) {
+        if (key) {
             this.caches[type].delete(key);
         } else {
             this.caches[type].clear();
